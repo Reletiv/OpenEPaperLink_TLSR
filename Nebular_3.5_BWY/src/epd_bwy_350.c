@@ -78,7 +78,7 @@ uint8_t EPD_BWY_350_read_temp(void)
     return epd_temperature;
 }
 
-#define scan_direction (SCAN_UP | RES_160x296 | FORMAT_BWR | BOOSTER_ON | RESET_NONE | LUT_OTP | SHIFT_RIGHT)
+#define scan_direction (SCAN_UP | RES_160x296 | FORMAT_BWR | BOOSTER_ON | RESET_NONE | LUT_OTP | SHIFT_LEFT)
 
 uint8_t EPD_BWY_350_Display_start(uint8_t full_or_partial)
 {

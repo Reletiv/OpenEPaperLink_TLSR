@@ -388,8 +388,8 @@ void set_EPD_model(uint8_t model_nr)
     }
     else if (epd_model == 6)
     { // Just as placeholder right now, needs a complete different driving because of RAM limits
-        resolution_w = 210;
-        resolution_h = 184;
+        resolution_w = 300;
+        resolution_h = 400;
     }
 
     obdCreateVirtualDisplay(&obd, resolution_w, resolution_h, epd_temp);
