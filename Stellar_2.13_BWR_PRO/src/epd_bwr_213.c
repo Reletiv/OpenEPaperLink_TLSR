@@ -34,15 +34,43 @@ enum PSR_FLAGS
 };
 
 #define lut_bwr_213_refresh_time 10
+
 uint8_t lut_bwr_213_20_part[] =
-    {
-        0x20, 0x00, lut_bwr_213_refresh_time, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+{
+    0x20, 0x00, lut_bwr_213_refresh_time, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
 uint8_t lut_bwr_213_22_part[] =
-    {
-        0x22, 0x80, lut_bwr_213_refresh_time, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+{
+    0x22, 0x80, lut_bwr_213_refresh_time, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
 uint8_t lut_bwr_213_23_part[] =
-    {
-        0x23, 0x40, lut_bwr_213_refresh_time, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+{
+    0x23, 0x40, lut_bwr_213_refresh_time, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+// =========================
+// 1 = original / normal panel
+// 0 = alternate panel revision with inverted BW polarity
+// =========================
+#define PANEL_TYPE_NORMAL 0
+
+#define scan_direction (SCAN_UP | RES_160x296 | FORMAT_BWR | BOOSTER_ON | RESET_NONE | LUT_OTP | SHIFT_RIGHT)
+
+// For both panel revisions, keep plane assignment standard:
+// 0x10 = BW plane
+// 0x13 = RED plane
+#define FIRST_PLANE_CMD    0x10
+#define SECOND_PLANE_CMD   0x13
+
+#if PANEL_TYPE_NORMAL
+    #define FIRST_PLANE_INVERT 0
+#else
+    #define FIRST_PLANE_INVERT 1
+#endif
+
+static uint8_t g_invert_current_plane = 0;
 
 uint8_t EPD_BWR_213_detect(void)
 {
@@ -78,15 +106,13 @@ uint8_t EPD_BWR_213_read_temp(void)
     return epd_temperature;
 }
 
-#define scan_direction (SCAN_UP | RES_160x296 | FORMAT_BWR | BOOSTER_ON | RESET_NONE | LUT_OTP | SHIFT_RIGHT)
-
 uint8_t EPD_BWR_213_Display_start(uint8_t full_or_partial)
 {
     uint8_t epd_temperature = 0;
+    (void)full_or_partial;
 
     // power on
     EPD_WriteCmd(0x04);
-
     WaitMs(1);
 
     /*EPD_WriteCmd(0X4D);
@@ -104,25 +130,45 @@ uint8_t EPD_BWR_213_Display_start(uint8_t full_or_partial)
     epd_temperature = EPD_SPI_read();
     EPD_SPI_read();
 
-    EPD_WriteCmd(0x10);
+    // First plane is always BW plane
+    EPD_WriteCmd(FIRST_PLANE_CMD);
+    g_invert_current_plane = FIRST_PLANE_INVERT;
 
     return epd_temperature;
 }
+
 void EPD_BWR_213_Display_byte(uint8_t data)
 {
-    EPD_WriteData(data);
+    if (g_invert_current_plane)
+    {
+        EPD_WriteData(~data);
+    }
+    else
+    {
+        EPD_WriteData(data);
+    }
 }
+
 void EPD_BWR_213_Display_buffer(unsigned char *image, int size)
 {
     for (int i = 0; i < size; i++)
     {
-        EPD_WriteData(image[i]);
+        if (g_invert_current_plane)
+        {
+            EPD_WriteData(~image[i]);
+        }
+        else
+        {
+            EPD_WriteData(image[i]);
+        }
     }
 }
 
 void EPD_BWR_213_Display_color_change()
 {
-    EPD_WriteCmd(0x13);
+    // Second plane is always RED plane
+    EPD_WriteCmd(SECOND_PLANE_CMD);
+    g_invert_current_plane = 0;
 }
 
 void EPD_BWR_213_Display_end()
@@ -133,10 +179,11 @@ void EPD_BWR_213_Display_end()
 uint8_t EPD_BWR_213_Display(unsigned char *image, int size, uint8_t full_or_partial)
 {
     uint8_t epd_temperature = 0;
+    int i;
+    (void)full_or_partial;
 
     // power on
     EPD_WriteCmd(0x04);
-
     WaitMs(1);
 
     /*EPD_WriteCmd(0X4D);
@@ -145,8 +192,9 @@ uint8_t EPD_BWR_213_Display(unsigned char *image, int size, uint8_t full_or_part
     EPD_WriteData(0x0A);
     EPD_WriteCmd(0X50);
     EPD_WriteData(0x57);*/
+
     EPD_WriteCmd(0x00);
-    EPD_WriteData(scan_direction); //| LUT_REG);
+    EPD_WriteData(scan_direction);
     EPD_WriteData(0x0f);
 
     EPD_WriteCmd(0x40);
@@ -159,9 +207,8 @@ uint8_t EPD_BWR_213_Display(unsigned char *image, int size, uint8_t full_or_part
     EPD_send_lut(lut_bwr_213_23_part, sizeof(lut_bwr_213_23_part));
     EPD_send_empty_lut(0x24, 260);*/
 
-    //////////////////////// This parts clears the full screen
+    // Clear both planes
     EPD_WriteCmd(0x10);
-    int i;
     for (i = 0; i < 8832; i++)
     {
         EPD_WriteData(0);
@@ -172,20 +219,22 @@ uint8_t EPD_BWR_213_Display(unsigned char *image, int size, uint8_t full_or_part
     {
         EPD_WriteData(0);
     }
-    //////////////////////// This parts clears the full screen
 
-    EPD_WriteCmd(0x10);
-    
+    // Main image goes to BW plane
+    EPD_WriteCmd(FIRST_PLANE_CMD);
     for (i = 0; i < size; i++)
     {
-        EPD_WriteData(image[i]);
+        if (FIRST_PLANE_INVERT)
+        {
+            EPD_WriteData(~image[i]);
+        }
+        else
+        {
+            EPD_WriteData(image[i]);
+        }
     }
-    // load image data to EPD
-    // EPD_LoadImage(image, size, 0x13);
 
-    // EPD_WriteCmd(0XB6);
-    // EPD_WriteData(0x12);
-    //  trigger display refresh
+    // trigger display refresh
     EPD_WriteCmd(0x12);
 
     return epd_temperature;
@@ -193,10 +242,6 @@ uint8_t EPD_BWR_213_Display(unsigned char *image, int size, uint8_t full_or_part
 
 void EPD_BWR_213_set_sleep(void)
 {
-    // Vcom and data interval setting
-    // EPD_WriteCmd(0x50);
-    // EPD_WriteData(0xf7);
-
     // power off
     EPD_WriteCmd(0x02);
 
